@@ -32,12 +32,11 @@ _start:
     b       .
 
 .section    .text.evictCaches, "ax", %progbits
-.align      12
 .global     evictCaches
 .type       evictCaches, %function
 evictCaches:
     // Try to evict caches for the core
-    .rept   0x1000 - 1
+    .rept   (0x1000 / 4) - 1
     orr     r0, #1
     .endr
     bx      lr
