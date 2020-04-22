@@ -129,14 +129,14 @@ $(OUTPUT).bin	:	$(OUTPUT).elf
 	$(OBJCOPY) -S -O binary $< $@
 	@echo built ... $(notdir $@)
 
+$(OFILES_SOURCES) : $(HFILES)
+
 $(OUTPUT).elf	:	$(OFILES)
 
 %.elf:	$(OFILES)
 	@echo linking $(notdir $@)
 	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
-
-$(OFILES_SRC)	: $(HFILES_BIN)
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
