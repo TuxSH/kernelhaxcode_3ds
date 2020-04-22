@@ -88,21 +88,23 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
-export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES 		:=	$(OFILES_BIN) $(OFILES_SRC)
-export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+export OFILES_SOURCES	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 
-export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
+export OFILES_BIN		:=	$(addsuffix .o,$(BINFILES))
+export OFILES 			:=	$(OFILES_BIN) $(OFILES_SOURCES)
 
-export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+export HFILES			:=	$(addsuffix .h,$(subst .,_,$(BINFILES))) 
+export INCLUDE			:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
+						$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+						-I$(CURDIR)/$(BUILD)
 
-.PHONY: $(BUILD) clean all
+export LIBPATHS			:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
+
+.PHONY: all clean check_arm9 check_arm11
 
 #---------------------------------------------------------------------------------
-all:	$(BUILD)
+all: $(BUILD) $(DEPSDIR)
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 check_arm9:
 	@$(MAKE) -C arm9 all
@@ -111,8 +113,12 @@ check_arm11:
 	@$(MAKE) -C arm11 all
 
 $(BUILD): check_arm9 check_arm11
-	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+	@mkdir -p $@
+
+ifneq ($(DEPSDIR),$(BUILD))
+$(DEPSDIR):
+	@mkdir -p $@
+endif
 
 #---------------------------------------------------------------------------------
 clean:
@@ -124,22 +130,17 @@ clean:
 
 #---------------------------------------------------------------------------------
 else
-.PHONY:	all
-
-DEPENDS	:=	$(OFILES:.o=.d)
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT).bin
-
 $(OUTPUT).bin	:	$(OUTPUT).elf
 	$(OBJCOPY) -S -O binary $< $@
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).elf	:	$(OFILES)
 
-%.elf: $(OFILES)
+%.elf:	$(OFILES)
 	@echo linking $(notdir $@)
 	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
@@ -149,12 +150,12 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
-%.bin.o	:	%.bin
+%.bin.o	%_bin.h :	%.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
 
--include $(DEPENDS)
+-include $(DEPSDIR)/*.d
 
 #---------------------------------------------------------------------------------------
 endif
