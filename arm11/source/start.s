@@ -9,8 +9,6 @@ _start:
     // Disable interrupts and switch to supervisor mode
     cpsid   aif, #0x13
 
-    mov     r4, r0
-
     // Set the control register to reset default: everything disabled
     ldr     r0, =0x54078
     mcr     p15, 0, r0, c1, c0, 0
@@ -35,7 +33,6 @@ _start:
     bl      memset
 
     ldr     sp, =__stack_top__
-    mov     r0, r4
     b       arm11main
 
 .global prepareForFirmlaunchStub

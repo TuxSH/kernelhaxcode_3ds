@@ -3,6 +3,8 @@
 #include "fmt.h"
 #include "PXI.h"
 
+#define CFG11_DSP_CNT           (vu8 *)0x10141230
+
 static struct {
     u8 syncStatus;
     u8 unitInfo;
@@ -23,9 +25,19 @@ static inline u32 getCmdbufSizeWords(u32 cmdhdr)
 // Called by k11's entrypoint function
 void k9Sync(void)
 {
+    /*
+        So... recent k9 implements _two_ synchronization mechanism, the legacy one and the new one. We'll
+        use the legacy one. Newer one is below:
+
+        mailbox->syncStatus = 1;
+        while (mailbox->syncStatus != 2);
+        mailbox->syncStatus = 3;
+     */
+
     mailbox->syncStatus = 1;
     while (mailbox->syncStatus != 2);
-    mailbox->syncStatus = 3;
+    mailbox->syncStatus = 1;
+    while (mailbox->syncStatus != 2);
 
     unitinfo = mailbox->unitInfo;
     bootenv = mailbox->bootEnv;
@@ -93,6 +105,7 @@ Result p9McShutdown(void)
 
 Result firmlaunch(u64 firmlaunchTid)
 {
+    *CFG11_DSP_CNT = 0x00; // CFG11_DSP_CNT must be null when doing a firmlaunch
     PXISendWord(0x44836);
     if (PXIReceiveWord() != 0x964536) {
         return 0xDEAD4001;

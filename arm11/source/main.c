@@ -14,7 +14,6 @@ extern u32 prepareForFirmlaunchStubSize;
 static u32 posY = 10;
 
 #define HID_PAD                 (*(vu32 *)0x10146000 ^ 0xFFF)
-#define CFG11_DSP_CNT           (vu8 *)0x10141230
 #define FIRM_MAGIC              0x4D524946 // 'FIRM' in little-endian
 
 #define PRINT_FUNC(name, color, hang)\
@@ -35,22 +34,34 @@ PRINT_FUNC(title, COLOR_TITLE, false)
 PRINT_FUNC(success, COLOR_GREEN, false)
 PRINT_FUNC(error, COLOR_RED, true)
 
-static void doFirmlaunchHax(u64 firmlauchTid)
+static inline const char *getFirmName(u64 tid)
 {
-    static vu32 *const firmMagic = (vu32 *)0x24000000;
-    static vu32 *const arm9Entrypoint = (vu32 *)0x2400000C; // old firmwares only
+    switch (tid & 0x0FFFFFFF) {
+        case 2: return "NATIVE_FIRM";
+        case 3: return "SAFE_FIRM";
+        default: return NULL;
+    }
+}
 
+static void launchFirm(u64 firmTid)
+{
     Result res = p9McShutdown();
     if (res & 0x80000000) {
         error("Shutdown returned error %08lx!\n", res);
     }
 
-    *CFG11_DSP_CNT = 0x00; // CFG11_DSP_CNT must be null when doing a firmlaunch
-    res = firmlaunch(firmlauchTid);
+    res = firmlaunch(firmTid);
     if (res & 0x80000000) {
         error("Firmlaunch returned error %08lx!\n", res);
     }
+}
 
+static void doFirmlaunchHax(u64 firmTid)
+{
+    static vu32 *const firmMagic = (vu32 *)0x24000000;
+    static vu32 *const arm9Entrypoint = (vu32 *)0x2400000C; // old firmwares only
+
+    launchFirm(firmTid);
     while(*firmMagic != FIRM_MAGIC); // Wait for the firm header to be written
 
     for (u32 i = 0; i < 0x10000; i++) {
@@ -62,17 +73,18 @@ static void doFirmlaunchHax(u64 firmlauchTid)
     success("Got Arm9 arbitrary code execution!\n");
 }
 
-void arm11main(u32 entrypoint)
+static void initFirm(void)
 {
-    // Fill the screens with black while Luma (if present) may be loading sysmodules into VRAM.
-    // prepareScreens will unset the regs.
-    LCD_TOP_FILL_REG = LCD_FILL(0, 0, 0);
-    LCD_BOTTOM_FILL_REG = LCD_FILL(0, 0, 0);
-
-    u64 firmlaunchTid = *(vu64 *)0x22200000; // set by pre-firmlaunch payload
-
     vu32 *entrypointAddr = (vu32 *)0x1FFFFFFC;
     vu32 *lumaOperation = (vu32 *)0x1FF80004;
+
+    // Wait for Process9 to write the new entrypoint
+    // (launchFirm doesn't do that because of firmlaunchhax)
+    u32 entrypoint;
+    do {
+        entrypoint = *entrypointAddr;
+    }
+    while (entrypoint == 0);
 
     bool isLuma = entrypoint == 0x1FF80000;
     *entrypointAddr = 0;
@@ -87,11 +99,6 @@ void arm11main(u32 entrypoint)
         entrypoint = *entrypointAddr;
     }
 
-    // I2C_init(); <-- this fucks up
-    prepareScreens();
-
-    title("Post-firmlaunch Arm11 stub\n\n");
-
     if (isLuma) {
         print("Luma detected and bypassed.\n");
     }
@@ -103,15 +110,45 @@ void arm11main(u32 entrypoint)
 
     p9InitComms();
     print("Synchronization with Process9 done.\n");
+}
 
-    switch (firmlaunchTid & 0xFFFF) {
-        case 0x0003:
-            print("Doing firmlaunchhax (SAFE_FIRM).\n");
-            doFirmlaunchHax(firmlaunchTid);
+static void doSafeHax11(u64 firmTidMask)
+{
+    u64 firmTid = firmTidMask | 3;
+
+    print("Launching %s...\n", getFirmName(firmTid));
+    launchFirm(firmTid);
+    initFirm();
+    print("Doing firmlaunchhax...\n");
+    doFirmlaunchHax(firmTid);
+}
+
+void arm11main(void)
+{
+    // Fill the screens with black while Luma (if present) may be loading sysmodules into VRAM.
+    // prepareScreens will unset the regs.
+    LCD_TOP_FILL_REG = LCD_FILL(0, 0, 0);
+    LCD_BOTTOM_FILL_REG = LCD_FILL(0, 0, 0);
+
+    u64 firmTid = *(vu64 *)0x22200000; // set by pre-firmlaunch payload
+    u64 firmTidMask = firmTid & ~0x0FFFFFFFull;
+
+    // I2C_init(); <-- this fucks up
+    prepareScreens();
+    title("Post-firmlaunch Arm11 stub (%s)\n\n", getFirmName(firmTid));
+
+    initFirm();
+
+    switch (firmTid & 0x0FFFFFFF) {
+        case 2:
+            // If testing with Luma, patch Luma like this:
+            // if (bootType != FIRMLAUNCH) ret += patchFirmlaunches(process9Offset, process9Size, process9MemAddr);
+            print("Doing safehax v1.1...\n");
+            doSafeHax11(firmTidMask);
             break;
-        case 0x0002:
-            print("Doing firmlaunchhax (NATIVE_FIRM).\n");
-            doFirmlaunchHax(firmlaunchTid);
+        case 3:
+            print("Doing firmlaunchhax...\n");
+            doFirmlaunchHax(firmTid);
             break;
         default:
             error("FIRM TID not supported!\n");

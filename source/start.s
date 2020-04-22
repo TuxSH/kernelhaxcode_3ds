@@ -25,7 +25,7 @@ _start:
 
     // Firmlaunch
     mov     r0, #0
-    ldr     r2, =firmlaunchTid
+    ldr     r2, =firmTid
     ldrd    r2, [r2]
     svc     0x7C
 
