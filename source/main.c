@@ -10,6 +10,12 @@
 u64 firmTid = 0;
 static u32 versionInfo = 0;
 
+static inline void lcdDebug(bool topScreen, u32 r, u32 g, u32 b)
+{
+    u32 base = topScreen ? 0x800A0200 : 0x800A0A00;
+    *(vu32 *)(base + 4) = BIT(24) | b << 16 | g << 8 | r;
+}
+
 static inline void *fixAddr(u32 addr)
 {
     return (u8 *)0x80000000 + (addr - 0x1FF80000);
@@ -48,12 +54,17 @@ static Result installFirmlaunchHook(void)
     // Find .fini:1FFF49A8 14 FF 2F E1                 BX              R4      ; __core0_stub
     // This should be the first result
     u32 *hook2Loc;
-    for (hook2Loc = (u32 *)fixAddr(0x1FFF4000); hook2Loc < (u32 *)fixAddr(0x1FFF5000) && *hook2Loc != 0xE12FFF14; hook2Loc++);
-    if (hook2Loc >= (u32 *)fixAddr(0x1FFF5000)) {
+    for (hook2Loc = (u32 *)fixAddr(0x1FF80000); hook2Loc < (u32 *)fixAddr(0x1FF80000 + 0x80000) && *hook2Loc != 0xE12FFF14; hook2Loc++);
+    if (hook2Loc >= (u32 *)fixAddr(0x1FF80000 + 0x80000)) {
+        lcdDebug(true, 255, 0, 0);
         return 0xDEAD2003;
     }
 
-    u8 *branchDst = (u8 *)fixAddr(0x1FFF4F00); // should be OK
+    u8 *branchDst = (u8 *)fixAddr(0x1FFF4F00); // should be OK, let's check
+    if (*(u32 *)fixAddr(0x1FFF4F00) != 0xFFFFFFFF) {
+        lcdDebug(true, 255, 0, 0);
+        return 0xDEAD2003;
+    }
 
     memcpy(branchDst, kernelFirmlaunchHook2, kernelFirmlaunchHook2Size);
 
@@ -77,6 +88,8 @@ Result exploitMain(u64 tid)
     Result ret = installFirmlaunchHook();
     if (ret == 0) {
         installKernelSvcHook();
+        lcdDebug(true, 0, 255, 0);
     }
+
     return ret;
 }
