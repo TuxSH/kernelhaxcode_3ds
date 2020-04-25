@@ -9,6 +9,8 @@
 
 u64 firmTid = 0;
 static u32 versionInfo = 0;
+static u32 *const axiwramStart = (u32 *)0x80000000;
+static u32 *const axiwramEnd = (u32 *)0x80080000;
 
 static inline void lcdDebug(bool topScreen, u32 r, u32 g, u32 b)
 {
@@ -21,27 +23,33 @@ static inline void *fixAddr(u32 addr)
     return (u8 *)0x80000000 + (addr - 0x1FF80000);
 }
 
-static void installKernelSvcHook(void)
+static Result modifySvcTable(void)
 {
-    u32 *excepPage = fixAddr(0x1FFF4000); // never changed; VA 0xFFFF0000
-    u32 svcOffset = (-((excepPage[2] & 0xFFFFFF) << 2) & (0xFFFFFF << 2)) - 8; // Branch offset + 8 for prefetch
-    u32 pointedInstructionVa = 0xFFFF0008 - svcOffset;
-    u32 baseKernelVa = pointedInstructionVa & ~0xFFFFF;
-    u32 pointedInstructionPa = pointedInstructionVa - baseKernelVa + 0x1FF80000;
-    u32 *pointedInstructionMirrorVa = fixAddr(pointedInstructionPa);
+    // Locate svc handler first: 00 6F 4D E9 STMFD           SP, {R8-R11,SP,LR}^ (2nd instruction)
+    u32 *svcTableMirrorVa;
+    for (svcTableMirrorVa = axiwramStart; svcTableMirrorVa < axiwramEnd && *svcTableMirrorVa != 0xE94D6F00; svcTableMirrorVa++);
 
-    // VA FFF00000 -> PA 0x1FF80000 never changed that much either except on super old versions
-    originalKernelSvcHandler = pointedInstructionMirrorVa[2];
-    pointedInstructionMirrorVa[2]= (u32)kernelSvcHandlerHook;
+    // Locate the table
+    while (*svcTableMirrorVa != 0) svcTableMirrorVa++;
+
+    if (svcTableMirrorVa >= axiwramEnd) {
+        return 0xDEAD2101;
+    }
+
+    // Everything has access to SendSyncRequest1/2/3/4 (id 0x2E to 0x31). Replace these entries with UnmapProcessMemory and KernelSetState
+    svcTableMirrorVa[0x30] = svcTableMirrorVa[0x72];
+    svcTableMirrorVa[0x31] = svcTableMirrorVa[0x7C];
+
+    return 0;
 }
 
 static Result installFirmlaunchHook(void)
 {
     // Find 0x44836, then go back to a known branch, then get the ldr r1, [r5]
     u32 *hook1Loc;
-    for (hook1Loc = (u32 *)fixAddr(0x1FF80000); hook1Loc < (u32 *)fixAddr(0x1FF80000 + 0x80000) && (hook1Loc[0] != 0x44836 || hook1Loc[1] != 0x964536); hook1Loc++);
-    if (hook1Loc >= (u32 *)fixAddr(0x1FF80000 + 0x80000)) {
-        return 0xDEAD2002;
+    for (hook1Loc = axiwramStart; hook1Loc < axiwramEnd && (hook1Loc[0] != 0x44836 || hook1Loc[1] != 0x964536); hook1Loc++);
+    if (hook1Loc >= axiwramEnd) {
+        return 0xDEAD2001;
     }
     for (; *hook1Loc != 0xE3A00080; hook1Loc--);
     for (; (*hook1Loc & 0xFFF0) != 0x1010; hook1Loc--);
@@ -51,13 +59,13 @@ static Result installFirmlaunchHook(void)
     hook1Loc[1] = 0xE12FFF3C; // blx r12
     hook1Loc[2] = (u32)kernelFirmlaunchHook1;
 
-    // Find .fini:1FFF49A8 14 FF 2F E1                 BX              R4      ; __core0_stub
+    // Find 14 FF 2F E1                 BX              R4      ; __core0_stub
     // This should be the first result
     u32 *hook2Loc;
-    for (hook2Loc = (u32 *)fixAddr(0x1FF80000); hook2Loc < (u32 *)fixAddr(0x1FF80000 + 0x80000) && *hook2Loc != 0xE12FFF14; hook2Loc++);
-    if (hook2Loc >= (u32 *)fixAddr(0x1FF80000 + 0x80000)) {
+    for (hook2Loc = axiwramStart; hook2Loc < axiwramEnd && *hook2Loc != 0xE12FFF14; hook2Loc++);
+    if (hook2Loc >= axiwramEnd) {
         lcdDebug(true, 255, 0, 0);
-        return 0xDEAD2003;
+        return 0xDEAD2002;
     }
 
     u8 *branchDst = (u8 *)fixAddr(0x1FFF4F00); // should be OK, let's check
@@ -87,8 +95,10 @@ Result exploitMain(u64 tid)
     versionInfo = (IS_N3DS ? 0x10000 : 0) | 0;
     Result ret = installFirmlaunchHook();
     if (ret == 0) {
-        installKernelSvcHook();
-        lcdDebug(true, 0, 255, 0);
+        ret = modifySvcTable();
+        if (ret == 0) {
+            lcdDebug(true, 0, 255, 0);
+        }
     }
 
     return ret;

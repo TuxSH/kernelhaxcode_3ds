@@ -3,34 +3,7 @@
 
 .section    .data.hooks, "aw", %progbits
 
-.align      2
-.type       kernelSvcHandlerHook, %function
-.global     kernelSvcHandlerHook
-
-// Note: compatible with both kext & original kernel handler
-kernelSvcHandlerHook:
-    push    {r0, r1}
-
-    // Allow access to all SVCs
-    mvn     r0, #1
-    str     r0, [sp, #4+0]
-    str     r0, [sp, #4+4]
-    str     r0, [sp, #4+8]
-    str     r0, [sp, #4+12]
-
-    // "Allow debug" flag
-    mov     r0, #1
-    strb    r0, [sp, #4+16+1]
-
-    pop     {r0, r1}
-    ldr     pc, [pc, #(originalKernelSvcHandler - . - 8)]
-
-.pool
-.global     originalKernelSvcHandler
-originalKernelSvcHandler:
-    .word   0xCAFECAFE
-
-.align      2
+.align      3
 .type       kernelFirmlaunchHook1, %function
 .global     kernelFirmlaunchHook1
 kernelFirmlaunchHook1:
