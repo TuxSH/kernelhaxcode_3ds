@@ -3,24 +3,26 @@
 #include "arm9_bin.h"
 #include "arm11_bin.h"
 
+#define MAP_ADDR                0x40000000
+
 #define MAKE_BRANCH(src,dst)    (0xEA000000 | ((u32)((((u8 *)(dst) - (u8 *)(src)) >> 2) - 2) & 0xFFFFFF))
 #define KERNVA2PA(a)            ((a) + (*(vu32 *)0x1FF80060 < SYSTEM_VERSION(2, 44, 6) ? 0xD0000000 : 0xC0000000))
 #define IS_N3DS                 (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT
 
 u64 firmTid = 0;
 static u32 versionInfo = 0;
-static u32 *const axiwramStart = (u32 *)0x80000000;
-static u32 *const axiwramEnd = (u32 *)0x80080000;
+static u32 *const axiwramStart = (u32 *)MAP_ADDR;
+static u32 *const axiwramEnd = (u32 *)(MAP_ADDR + 0x80000);
 
 static inline void lcdDebug(bool topScreen, u32 r, u32 g, u32 b)
 {
-    u32 base = topScreen ? 0x800A0200 : 0x800A0A00;
+    u32 base = topScreen ? MAP_ADDR + 0xA0200 : MAP_ADDR + 0xA0A00;
     *(vu32 *)(base + 4) = BIT(24) | b << 16 | g << 8 | r;
 }
 
 static inline void *fixAddr(u32 addr)
 {
-    return (u8 *)0x80000000 + (addr - 0x1FF80000);
+    return (u8 *)MAP_ADDR + (addr - 0x1FF80000);
 }
 
 static Result modifySvcTable(void)

@@ -20,8 +20,8 @@ _start:
     mcr     p15, 0, r0, c7, c5, 4
 
     // Check if Luma kext is there using GetSystemInfo. Always return 0 on vanilla
-    ldr     r1, =0x10002
-    mov     r2, #0xFF
+    ldr     r1, =0x20000
+    mov     r2, #0
     svc     0x2A
     movs    r8, r0
 
