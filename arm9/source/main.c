@@ -1,15 +1,19 @@
+#include <string.h>
 #include "types.h"
 #include "PXI.h"
 #include "fatfs/ff.h"
 
 static FATFS sdFs;
 
+TakeoverParameters g_takeoverParameters = {};
+
 void arm9main(void)
 {
     UINT rd;
-    u64 firmlaunchTid = *(vu64 *)0x22200000; // set by pre-firmlaunch payload
+    memcpy(&g_takeoverParameters, (const void *)0x22200000, sizeof(g_takeoverParameters));
+    size_t fileOffset = g_takeoverParameters.payloadFileOffset;
 
-    switch (firmlaunchTid & 0xFFFF) {
+    switch (g_takeoverParameters.firmTid & 0xFFFF) {
         case 0x0003:
         case 0x0002:
             PXISendWord(0x0000CAFE);
@@ -28,18 +32,24 @@ void arm9main(void)
         for (;;);
     }
 
-    fsRes = f_open(&f, "SafeB9SInstaller.bin", FA_READ);
+    fsRes = f_open(&f, g_takeoverParameters.payloadFileName, FA_READ);
     if (fsRes != FR_OK) {
         PXISendWord(0xCACA0100 | fsRes);
         for (;;);
     }
 
-    if (f_size(&f) > 0xFFFE00) {
+    FSIZE_t fileSize = f_size(&f);
+    if (fileSize < fileOffset || fileSize - fileOffset > 0xFFFE00) {
+        PXISendWord(0xCACA0200 | 0);
+        for (;;);
+    }
+    fsRes = f_lseek(&f, fileOffset);
+    if (fsRes != FR_OK) {
         PXISendWord(0xCACA0200 | fsRes);
         for (;;);
     }
 
-    fsRes = f_read(&f, (void *)0x23F00000, 0xFFFE00, &rd);
+    fsRes = f_read(&f, (void *)0x23F00000, fileSize - fileOffset, &rd);
     if (fsRes != FR_OK) {
         PXISendWord(0xCACA0300 | fsRes);
         for (;;);

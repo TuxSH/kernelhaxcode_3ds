@@ -60,7 +60,7 @@ static inline void khc3dsPrepareL2Table(BlobLayout *layout)
     l2table[0xA0000 >> 12] = 0x10202000 | 0x437;
 }
 
-static inline Result khc3dsRunExploitChain(void)
+static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadFileOffset)
 {
     u64 firmTidMask = IS_N3DS ? 0x0004013820000000ULL : 0x0004013800000000ULL;
     u32 kernelVersion = *(vu32 *)0x1FF80060;
@@ -84,5 +84,5 @@ static inline Result khc3dsRunExploitChain(void)
     __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 4" :: "r" (0) : "memory");
     __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" :: "r" (0) : "memory");
 
-    return ((Result (*)(u64))(MAP_ADDR + 0x80000))(firmTidMask | firmTidLow);
+    return ((Result (*)(u64, const char *, size_t))(MAP_ADDR + 0x80000))(firmTidMask | firmTidLow, payloadFileName, payloadFileOffset);
 }

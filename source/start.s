@@ -11,7 +11,7 @@
 _start:
     push    {r4, pc}
 
-    bl      exploitMain
+    bl      takeoverMain
     cmp     r0, #0
     popne   {r4, lr}
 
@@ -34,7 +34,7 @@ _start:
 
     // Firmlaunch
     mov     r0, #0
-    ldr     r2, =firmTid
+    ldr     r2, =g_takeoverParameters
     ldrd    r2, [r2]
     svceq   0x31
     svcne   0x7C

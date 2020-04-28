@@ -9,8 +9,8 @@
 #define KERNVA2PA(a)            ((a) + (*(vu32 *)0x1FF80060 < SYSTEM_VERSION(2, 44, 6) ? 0xD0000000 : 0xC0000000))
 #define IS_N3DS                 (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT
 
-u64 firmTid = 0;
-static u32 versionInfo = 0;
+TakeoverParameters g_takeoverParameters = {};
+
 static u32 *const axiwramStart = (u32 *)MAP_ADDR;
 static u32 *const axiwramEnd = (u32 *)(MAP_ADDR + 0x80000);
 
@@ -86,15 +86,16 @@ void kernCopySections(void)
 {
     memmove((void *)KERNVA2PA(0x22000000), arm11_bin, arm11_bin_size);
     memmove((void *)KERNVA2PA(0x22100000), arm9_bin, arm9_bin_size);
-
-    *(vu64 *)KERNVA2PA(0x22200000) = firmTid;
-    *(vu32 *)KERNVA2PA(0x22200008) = versionInfo;
+    memmove((void *)KERNVA2PA(0x22200000), &g_takeoverParameters, sizeof(g_takeoverParameters));
 }
 
-Result exploitMain(u64 tid)
+Result takeoverMain(u64 firmTid, const char *payloadFileName, size_t payloadFileOffset)
 {
-    firmTid = tid;
-    versionInfo = (IS_N3DS ? 0x10000 : 0) | 0;
+    g_takeoverParameters.firmTid = firmTid;
+    g_takeoverParameters.versionInfo = (IS_N3DS ? 0x10000 : 0) | 0;
+    g_takeoverParameters.payloadFileOffset = payloadFileOffset;
+    strncpy(g_takeoverParameters.payloadFileName, payloadFileName, 255);
+
     Result ret = installFirmlaunchHook();
     if (ret == 0) {
         ret = modifySvcTable();

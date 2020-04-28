@@ -47,3 +47,10 @@ typedef u32 Result;
 /// Packs a system version from its components.
 #define SYSTEM_VERSION(major, minor, revision) \
     (((major)<<24)|((minor)<<16)|((revision)<<8))
+
+typedef struct TakeoverParameters {
+    u64 firmTid;
+    u32 versionInfo;
+    size_t payloadFileOffset;
+    char payloadFileName[255+1];
+} TakeoverParameters;

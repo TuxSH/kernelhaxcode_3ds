@@ -6,16 +6,10 @@
 #include "PXI.h"
 #include "i2c.h"
 
-extern vu32 versionInfo;
-
-extern const u32 prepareForFirmlaunchStub[];
-extern u32 prepareForFirmlaunchStubSize;
-
-static u32 posY = 10;
-
 #define HID_PAD                 (*(vu32 *)0x10146000 ^ 0xFFF)
 #define FIRM_MAGIC              0x4D524946 // 'FIRM' in little-endian
 
+static u32 posY = 10;
 #define PRINT_FUNC(name, color, hang)\
 static void name(const char *fmt, ...)\
 {\
@@ -33,6 +27,11 @@ PRINT_FUNC(print, COLOR_WHITE, false)
 PRINT_FUNC(title, COLOR_TITLE, false)
 PRINT_FUNC(success, COLOR_GREEN, false)
 PRINT_FUNC(error, COLOR_RED, true)
+
+extern const u32 prepareForFirmlaunchStub[];
+extern u32 prepareForFirmlaunchStubSize;
+
+TakeoverParameters g_takeoverParameters = {};
 
 static inline const char *getFirmName(u64 tid)
 {
@@ -130,7 +129,9 @@ void arm11main(void)
     LCD_TOP_FILL_REG = LCD_FILL(0, 0, 0);
     LCD_BOTTOM_FILL_REG = LCD_FILL(0, 0, 0);
 
-    u64 firmTid = *(vu64 *)0x22200000; // set by pre-firmlaunch payload
+    memcpy(&g_takeoverParameters, (const void *)0x22200000, sizeof(g_takeoverParameters));
+
+    u64 firmTid = g_takeoverParameters.firmTid;
     u64 firmTidMask = firmTid & ~0x0FFFFFFFull;
 
     // I2C_init(); <-- this fucks up
@@ -159,18 +160,19 @@ void arm11main(void)
     if ((res & 0x80000000) == 0) {
         success("SafeB9SInstaller.bin read successfully!\n");
     } else {
+        const char *fileName = g_takeoverParameters.payloadFileName;
         switch ((res >> 8) & 0xFF) {
             case 0:
                 error("Failed to mount the SD card! (%u)\n", res & 0xFF);
                 break;
             case 1:
-                error("Failed to open SafeB9SInstaller.bin! (%d)\n", res & 0xFF);
+                error("Failed to open %s! (%d)\n", fileName, res & 0xFF);
                 break;
             case 2:
-                error("SafeB9SInstaller.bin is too big!\n");
+                error("%s is too big!\n", fileName);
                 break;
             case 3:
-                error("Failed to read SafeB9SInstaller.bin! (%d)\n", res & 0xFF);
+                error("Failed to read %s! (%d)\n", fileName, res & 0xFF);
                 break;
             default:
                 error("Unknown filesystem error!\n");

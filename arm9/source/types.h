@@ -41,3 +41,10 @@ typedef volatile s64 vs64; ///< 64-bit volatile signed integer.
 #define ALIGN(m)   __attribute__((aligned(m)))
 /// Packs a struct (and other types?) so it won't include padding bytes.
 #define PACKED     __attribute__((packed))
+
+typedef struct TakeoverParameters {
+    u64 firmTid;
+    u32 versionInfo;
+    size_t payloadFileOffset;
+    char payloadFileName[255+1];
+} TakeoverParameters;
