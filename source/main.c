@@ -6,7 +6,7 @@
 #define MAP_ADDR                0x40000000
 
 #define MAKE_BRANCH(src,dst)    (0xEA000000 | ((u32)((((u8 *)(dst) - (u8 *)(src)) >> 2) - 2) & 0xFFFFFF))
-#define KERNVA2PA(a)            ((a) + (*(vu32 *)0x1FF80060 < SYSTEM_VERSION(2, 44, 6) ? 0xD0000000 : 0xC0000000))
+#define KERNVA2PA(a)            ((a) + (*(vu8 *)0x1FF80062  < 44 ? 0xD0000000 : 0xC0000000))
 #define IS_N3DS                 (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT
 
 TakeoverParameters g_takeoverParameters = {};

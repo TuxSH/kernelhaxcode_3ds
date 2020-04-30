@@ -3,7 +3,7 @@
 // For usage by the calling code
 
 #ifndef KERNVA2PA
-#define KERNVA2PA(a)    ((a) + (*(vu32 *)0x1FF80060 < SYSTEM_VERSION(2, 44, 6) ? 0xD0000000 : 0xC0000000))
+#define KERNVA2PA(a)    ((a) + (*(vu8 *)0x1FF80062  < 44 ? 0xD0000000 : 0xC0000000))
 #endif
 
 #ifndef IS_N3DS
@@ -63,16 +63,16 @@ static inline void khc3dsPrepareL2Table(BlobLayout *layout)
 static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadFileOffset)
 {
     u64 firmTidMask = IS_N3DS ? 0x0004013820000000ULL : 0x0004013800000000ULL;
-    u32 kernelVersion = *(vu32 *)0x1FF80060;
+    u8 kernelMinorVersion = *(vu8 *)0x1FF80062;
     u32 firmTidLow;
 
-    switch (kernelVersion & ~0xFF) {
+    switch (kernelMinorVersion) {
         // Up to 11.2: use safehax
-        case 0 ... SYSTEM_VERSION(2, 53, 0) - 1:
+        case 0 ... 53 - 1:
             firmTidLow = 3;
             break;
         // 11.3: use safehax v1.1
-        case SYSTEM_VERSION(2, 53, 0):
+        case 53:
             firmTidLow = 2;
             break;
         default:
