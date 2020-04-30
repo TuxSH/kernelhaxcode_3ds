@@ -25,7 +25,7 @@ typedef struct BlobLayout {
     u32 padding[0x400 - 0x100];
 } BlobLayout;
 
-static inline void lcdDebug(bool topScreen, u32 r, u32 g, u32 b)
+static inline void khc3dsLcdDebug(bool topScreen, u32 r, u32 g, u32 b)
 {
     u32 base = topScreen ? MAP_ADDR + 0xA0200 : MAP_ADDR + 0xA0A00;
     *(vu32 *)(base + 4) = BIT(24) | b << 16 | g << 8 | r;
