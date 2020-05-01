@@ -44,9 +44,13 @@ typedef u32 Result;
 /// Packs a struct (and other types?) so it won't include padding bytes.
 #define PACKED     __attribute__((packed))
 
+#define TRY(expr)   if((res = (expr)) & 0x80000000) return res;
+
 typedef struct TakeoverParameters {
     u64 firmTid;
-    u32 versionInfo;
+    u8 kernelVersionMajor;
+    u8 kernelVersionMinor;
+    bool isN3ds;
     size_t payloadFileOffset;
     char payloadFileName[255+1];
 } TakeoverParameters;

@@ -5,6 +5,9 @@
 
 #define CFG11_DSP_CNT           (vu8 *)0x10141230
 
+extern TakeoverParameters g_takeoverParameters;
+void print(const char *fmt, ...);
+
 static struct {
     u8 syncStatus;
     u8 unitInfo;
@@ -14,8 +17,8 @@ static struct {
     u32 arm11Entrypoint;
 } volatile *const mailbox = (void *)0x1FFFFFF0;
 
-u8 unitinfo;
-u32 bootenv;
+u8 g_unitInfo;
+u32 g_bootEnv;
 
 static inline u32 getCmdbufSizeWords(u32 cmdhdr)
 {
@@ -39,10 +42,10 @@ void k9Sync(void)
     mailbox->syncStatus = 1;
     while (mailbox->syncStatus != 2);
 
-    unitinfo = mailbox->unitInfo;
-    bootenv = mailbox->bootEnv;
+    g_unitInfo = mailbox->unitInfo;
+    g_bootEnv = mailbox->bootEnv;
 
-    if (unitinfo == 3) {
+    if (g_unitInfo == 3) {
       for (u32 i = 0; i < 0x800000; i++);
       mailbox->syncStatus = 1;
       while (mailbox->syncStatus != 2);
@@ -75,24 +78,78 @@ void p9InitComms(void)
     while(PXIReceiveByte() < 2);
 }
 
-static Result p9SendSyncRequest(u8 serviceId, u32 *cmdbuf)
+static void p9SendCmdbufWithServiceId(u32 serviceId, u32 *cmdbuf)
 {
     // https://github.com/TuxSH/3ds_pxi/blob/master/source/sender.c#L40
     PXISendWord(serviceId);
     PXITriggerSync9IRQ(); //notify arm9
     PXISendBuffer(cmdbuf, getCmdbufSizeWords(cmdbuf[0]));
     while (!PXIIsSendFIFOEmpty());
+}
 
-    while (PXIIsReceiveFIFOEmpty());
-    if (PXIReceiveWord() != serviceId) { // service ID
+static Result p9ReceiveCmdbuf(u32 *cmdbuf)
+{
+    cmdbuf[0] = PXIReceiveWord();
+    u32 cmdbufSizeWords = getCmdbufSizeWords(cmdbuf[0]);
+    if (cmdbufSizeWords > 0x40) {
         return 0xDEAD3001;
     }
-
-    cmdbuf[0] = PXIReceiveWord();
-    PXIReceiveBuffer(cmdbuf + 1, getCmdbufSizeWords(cmdbuf[0]) - 1);
+    PXIReceiveBuffer(cmdbuf + 1, cmdbufSizeWords - 1);
     while (!PXIIsReceiveFIFOEmpty());
 
-    return getCmdbufSizeWords(cmdbuf[0]) == 0 ? 0 : cmdbuf[1];
+    return 0;
+}
+
+Result p9ReceiveNotification11(u32 *outNotificationId, u32 serviceId)
+{
+    u32 cmdbuf[0x40];
+    Result res = 0;
+    TRY(p9ReceiveCmdbuf(cmdbuf));
+
+    switch (cmdbuf[0] >> 16) {
+        case 1:
+            *outNotificationId = cmdbuf[1];
+            cmdbuf[0] = 0x10040;
+            res = 0;
+            break;
+        default:
+            *outNotificationId = 0;
+            cmdbuf[0] = 0x40;
+            res = 0xD900182F;
+            break;
+    }
+
+    cmdbuf[1] = res;
+
+    p9SendCmdbufWithServiceId(serviceId, cmdbuf);
+
+    return res;
+}
+
+static Result p9SendSyncRequest(u32 serviceId, u32 *cmdbuf)
+{
+    u32 replyServiceId;
+    Result res = 0;
+
+    p9SendCmdbufWithServiceId(serviceId, cmdbuf);
+
+    for (;;) {
+        // Receive the request or reply cmdbuf from p9 (might be incoming notification)
+        // We assume that if we didn't receive serviceId, we received a notification (this is not foolproof)
+        // Pre-2.0 (or 3.0? not sure), p9 only has 5 services instead of 8 (no duplicate sessions for FS)
+        while (PXIIsReceiveFIFOEmpty());
+        replyServiceId = PXIReceiveWord();
+        if (replyServiceId == serviceId) {
+            TRY(p9ReceiveCmdbuf(cmdbuf));
+            return getCmdbufSizeWords(cmdbuf[0]) == 0 ? 0 : cmdbuf[1];
+        } else {
+            u32 notificationId;
+            TRY(p9ReceiveNotification11(&notificationId, replyServiceId));
+            print("Received notification ID 0x%lx\n", notificationId);
+        }
+    }
+
+    return res;
 }
 
 Result p9McShutdown(void)
@@ -105,8 +162,11 @@ Result p9McShutdown(void)
 
 Result firmlaunch(u64 firmlaunchTid)
 {
+    PXIReset();
+
     *CFG11_DSP_CNT = 0x00; // CFG11_DSP_CNT must be null when doing a firmlaunch
     PXISendWord(0x44836);
+
     if (PXIReceiveWord() != 0x964536) {
         return 0xDEAD4001;
     }

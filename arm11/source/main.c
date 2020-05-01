@@ -11,7 +11,7 @@
 
 static u32 posY = 10;
 #define PRINT_FUNC(name, color, hang)\
-static void name(const char *fmt, ...)\
+void name(const char *fmt, ...)\
 {\
     va_list args;\
     va_start(args, fmt);\
@@ -46,12 +46,12 @@ static void launchFirm(u64 firmTid)
 {
     Result res = p9McShutdown();
     if (res & 0x80000000) {
-        error("Shutdown returned error %08lx!\n", res);
+        error("Shutdown returned error 0x%08lx!\n", res);
     }
 
     res = firmlaunch(firmTid);
     if (res & 0x80000000) {
-        error("Firmlaunch returned error %08lx!\n", res);
+        error("Firmlaunch returned error 0x%08lx!\n", res);
     }
 }
 
@@ -102,7 +102,7 @@ static void initFirm(void)
         print("Luma detected and bypassed.\n");
     }
 
-    print("Arm11 entrypoint is %08lx.\n", entrypoint);
+    print("Arm11 entrypoint is 0x%08lx.\n", entrypoint);
 
     k9Sync();
     print("Synchronization with Kernel9 done.\n");
@@ -166,13 +166,13 @@ void arm11main(void)
                 error("Failed to mount the SD card! (%u)\n", res & 0xFF);
                 break;
             case 1:
-                error("Failed to open %s! (%d)\n", fileName, res & 0xFF);
+                error("Failed to open %s! (%u)\n", fileName, res & 0xFF);
                 break;
             case 2:
                 error("%s is too big!\n", fileName);
                 break;
             case 3:
-                error("Failed to read %s! (%d)\n", fileName, res & 0xFF);
+                error("Failed to read %s! (%u)\n", fileName, res & 0xFF);
                 break;
             default:
                 error("Unknown filesystem error!\n");

@@ -2,12 +2,20 @@
 
 // For usage by the calling code
 
+#ifndef KERNEL_VERSION_MAJOR
+#define KERNEL_VERSION_MAJOR    (*(vu8 *)0x1FF80063)
+#endif
+
+#ifndef KERNEL_VERSION_MINOR
+#define KERNEL_VERSION_MINOR    (*(vu8 *)0x1FF80062)
+#endif
+
 #ifndef KERNPA2VA
-#define KERNPA2VA(a)    ((a) + (*(vu8 *)0x1FF80062  < 44 ? 0xD0000000 : 0xC0000000))
+#define KERNPA2VA(a)            ((a) + (KERNEL_VERSION_MINOR < 44 ? 0xD0000000 : 0xC0000000))
 #endif
 
 #ifndef IS_N3DS
-#define IS_N3DS         (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT
+#define IS_N3DS                 (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT
 #endif
 
 #ifndef SYSTEM_VERSION
@@ -16,7 +24,7 @@
     (((major)<<24)|((minor)<<16)|((revision)<<8))
 #endif
 
-#define MAP_ADDR        0x40000000
+#define MAP_ADDR                0x40000000
 
 typedef struct BlobLayout {
     u8 padding0[0x1000]; // to account for firmlaunch params in case we're placed at FCRAM+0
@@ -63,10 +71,10 @@ static inline void khc3dsPrepareL2Table(BlobLayout *layout)
 static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadFileOffset)
 {
     u64 firmTidMask = IS_N3DS ? 0x0004013820000000ULL : 0x0004013800000000ULL;
-    u8 kernelMinorVersion = *(vu8 *)0x1FF80062;
+    u8 kernelVersionMinor = KERNEL_VERSION_MINOR;
     u32 firmTidLow;
 
-    switch (kernelMinorVersion) {
+    switch (kernelVersionMinor) {
         // Up to 11.2: use safehax
         case 0 ... 53 - 1:
             firmTidLow = 3;
