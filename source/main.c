@@ -6,7 +6,7 @@
 #define MAP_ADDR                0x40000000
 
 #define MAKE_BRANCH(src,dst)    (0xEA000000 | ((u32)((((u8 *)(dst) - (u8 *)(src)) >> 2) - 2) & 0xFFFFFF))
-#define KERNVA2PA(a)            ((a) + (*(vu8 *)0x1FF80062  < 44 ? 0xD0000000 : 0xC0000000))
+#define KERNPA2VA(a)            ((a) + (*(vu8 *)0x1FF80062  < 44 ? 0xD0000000 : 0xC0000000))
 #define IS_N3DS                 (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT
 
 TakeoverParameters g_takeoverParameters = {};
@@ -84,9 +84,9 @@ static Result installFirmlaunchHook(void)
 
 void kernCopySections(void)
 {
-    memmove((void *)KERNVA2PA(0x22000000), arm11_bin, arm11_bin_size);
-    memmove((void *)KERNVA2PA(0x22100000), arm9_bin, arm9_bin_size);
-    memmove((void *)KERNVA2PA(0x22200000), &g_takeoverParameters, sizeof(g_takeoverParameters));
+    memmove((void *)KERNPA2VA(0x22000000), arm11_bin, arm11_bin_size);
+    memmove((void *)KERNPA2VA(0x22100000), arm9_bin, arm9_bin_size);
+    memmove((void *)KERNPA2VA(0x22200000), &g_takeoverParameters, sizeof(g_takeoverParameters));
 }
 
 Result takeoverMain(u64 firmTid, const char *payloadFileName, size_t payloadFileOffset)

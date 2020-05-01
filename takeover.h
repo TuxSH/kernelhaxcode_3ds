@@ -2,8 +2,8 @@
 
 // For usage by the calling code
 
-#ifndef KERNVA2PA
-#define KERNVA2PA(a)    ((a) + (*(vu8 *)0x1FF80062  < 44 ? 0xD0000000 : 0xC0000000))
+#ifndef KERNPA2VA
+#define KERNPA2VA(a)    ((a) + (*(vu8 *)0x1FF80062  < 44 ? 0xD0000000 : 0xC0000000))
 #endif
 
 #ifndef IS_N3DS
@@ -77,6 +77,7 @@ static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadF
             break;
         default:
             // No exploit
+            khc3dsLcdDebug(true, 0, 255, 255);
             return 0xDEADFFFF;
     }
 
