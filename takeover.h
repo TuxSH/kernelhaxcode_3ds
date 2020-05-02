@@ -3,11 +3,11 @@
 // For usage by the calling code
 
 #ifndef KERNEL_VERSION_MAJOR
-#define KERNEL_VERSION_MAJOR    (*(vu8 *)0x1FF80063)
+#define KERNEL_VERSION_MAJOR    (*(vu8 *)0x1FF80003)
 #endif
 
 #ifndef KERNEL_VERSION_MINOR
-#define KERNEL_VERSION_MINOR    (*(vu8 *)0x1FF80062)
+#define KERNEL_VERSION_MINOR    (*(vu8 *)0x1FF80002)
 #endif
 
 #ifndef KERNPA2VA

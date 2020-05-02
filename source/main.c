@@ -6,8 +6,8 @@
 #define MAP_ADDR                0x40000000
 
 #define MAKE_BRANCH(src,dst)    (0xEA000000 | ((u32)((((u8 *)(dst) - (u8 *)(src)) >> 2) - 2) & 0xFFFFFF))
-#define KERNEL_VERSION_MAJOR    (*(vu8 *)0x1FF80063)
-#define KERNEL_VERSION_MINOR    (*(vu8 *)0x1FF80062)
+#define KERNEL_VERSION_MAJOR    (*(vu8 *)0x1FF80003)
+#define KERNEL_VERSION_MINOR    (*(vu8 *)0x1FF80002)
 #define KERNPA2VA(a)            ((a) + (KERNEL_VERSION_MINOR < 44 ? 0xD0000000 : 0xC0000000))
 #define IS_N3DS                 (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT
 
