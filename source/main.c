@@ -63,7 +63,7 @@ static Result installFirmlaunchHook(void)
     if (hook1Loc >= axiwramEnd) {
         return 0xDEAD2001;
     }
-    for (; *hook1Loc != 0xE3A00080; hook1Loc--);
+    for (; (*hook1Loc & ~0xF000) != 0xE3A00080; hook1Loc--);
     for (; (*hook1Loc & 0xFFF0) != 0x1010; hook1Loc--);
 
     hook1Loc[0] = 0xE59FC000; // ldr r12, =kernelFirmlaunchHook1
@@ -130,7 +130,6 @@ void kernDoPrepareForFirmlaunchHook(void)
 Result takeoverMain(u64 firmTid, const char *payloadFileName, size_t payloadFileOffset)
 {
     Result res = 0;
-
     g_takeoverParameters.firmTid = firmTid;
     g_takeoverParameters.kernelVersionMajor = KERNEL_VERSION_MAJOR;
     g_takeoverParameters.kernelVersionMinor = KERNEL_VERSION_MINOR;
@@ -138,7 +137,9 @@ Result takeoverMain(u64 firmTid, const char *payloadFileName, size_t payloadFile
     g_takeoverParameters.payloadFileOffset = payloadFileOffset;
     strncpy(g_takeoverParameters.payloadFileName, payloadFileName, 255);
 
+    lcdDebug(true, 0, 255, 255);
     TRY(installFirmlaunchHook());
+    lcdDebug(true, 255, 0, 255);
     TRY(modifySvcTable());
     lcdDebug(true, 0, 255, 0);
 
