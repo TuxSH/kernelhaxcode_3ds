@@ -59,3 +59,8 @@ typedef struct TakeoverParameters {
     char payloadFileName[255+1];
 } TakeoverParameters;
 
+#define REG8(a)     (*(vu8 *)(a))
+#define REG16(a)    (*(vu16 *)(a))
+#define REG32(a)    (*(vu32 *)(a))
+
+#define MAP_ADDR    0x40000000

@@ -3,7 +3,7 @@
 #include "fmt.h"
 #include "PXI.h"
 
-#define CFG11_DSP_CNT           (vu8 *)0x10141230
+#define CFG11_DSP_CNT           (*(vu8 *)0x10141230)
 
 extern TakeoverParameters g_takeoverParameters;
 void print(const char *fmt, ...);
@@ -164,7 +164,9 @@ Result firmlaunch(u64 firmlaunchTid)
 {
     PXIReset();
 
-    *CFG11_DSP_CNT = 0x00; // CFG11_DSP_CNT must be null when doing a firmlaunch
+    // CFG11_DSP_CNT must be zero when doing a firmlaunch
+    CFG11_DSP_CNT = 0x00;
+
     PXISendWord(0x44836);
 
     if (PXIReceiveWord() != 0x964536) {

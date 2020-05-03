@@ -66,6 +66,13 @@ static inline void khc3dsPrepareL2Table(BlobLayout *layout)
 
     // LCD registers (for debug), RW, Shared, Device
     l2table[0xA0000 >> 12] = 0x10202000 | 0x437;
+
+    // PXI registers (for cleaner hooks)
+    l2table[0xA1000 >> 12] = 0x10163000 | 0x437;
+
+    // CFG11 registers, two pages
+    l2table[0xA2000 >> 12] = 0x10140000 | 0x437;
+    l2table[0xA3000 >> 12] = 0x10141000 | 0x437;
 }
 
 static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadFileOffset)
