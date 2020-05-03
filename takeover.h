@@ -24,7 +24,7 @@
     (((major)<<24)|((minor)<<16)|((revision)<<8))
 #endif
 
-#define MAP_ADDR                0x40000000
+#define KHC3DS_MAP_ADDR         0x40000000
 
 typedef struct BlobLayout {
     u8 padding0[0x1000]; // to account for firmlaunch params in case we're placed at FCRAM+0
@@ -35,7 +35,7 @@ typedef struct BlobLayout {
 
 static inline void khc3dsLcdDebug(bool topScreen, u32 r, u32 g, u32 b)
 {
-    u32 base = topScreen ? MAP_ADDR + 0xA0200 : MAP_ADDR + 0xA0A00;
+    u32 base = topScreen ? KHC3DS_MAP_ADDR + 0xA0200 : KHC3DS_MAP_ADDR + 0xA0A00;
     *(vu32 *)(base + 4) = BIT(24) | b << 16 | g << 8 | r;
 }
 
@@ -100,5 +100,5 @@ static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadF
     __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 4" :: "r" (0) : "memory");
     __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" :: "r" (0) : "memory");
 
-    return ((Result (*)(u64, const char *, size_t))(MAP_ADDR + 0x80000))(firmTidMask | firmTidLow, payloadFileName, payloadFileOffset);
+    return ((Result (*)(u64, const char *, size_t))(KHC3DS_MAP_ADDR + 0x80000))(firmTidMask | firmTidLow, payloadFileName, payloadFileOffset);
 }
