@@ -100,6 +100,11 @@ void kernDoPrepareForFirmlaunchHook(void)
     memmove((void *)KERNPA2VA(0x22100000), arm9_bin, arm9_bin_size);
     memmove((void *)KERNPA2VA(0x22200000), &g_takeoverParameters, sizeof(g_takeoverParameters));
 
+    // DSB, Flush Prefetch Buffer (more or less "isb")
+    // Needed to avoid race condition with Arm9 code
+    __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 4" :: "r" (0) : "memory");
+    __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" :: "r" (0) : "memory");
+
     // Send PXIMC (service id 0) command 0, telling p9 to stop doing stuff and to wait for command 0x44836
     // (this is what the pxi sysmodule normally does when terminating)
     PXISendWord(0);
