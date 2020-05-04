@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <assert.h>
 
 /// The maximum value of a u64.
 #define U64_MAX	UINT64_MAX
@@ -50,6 +51,24 @@ typedef u32 Result;
 
 #define TRY(expr)   if((res = (expr)) & 0x80000000) return res;
 
+#define REG8(a)     (*(vu8 *)(a))
+#define REG16(a)    (*(vu16 *)(a))
+#define REG32(a)    (*(vu32 *)(a))
+
+#define MAP_ADDR    0x40000000
+
+// PXI regs at +0xA1000
+#define LCD_REGS_BASE           (MAP_ADDR + 0xA0000)
+#define CFG11_REGS_BASE         (MAP_ADDR + 0xA2000)
+
+//#define CFG11_SOCINFO           REG16(CFG11_REGS_BASE + 0x0FFC)
+#define CFG11_DSP_CNT           REG8(CFG11_REGS_BASE + 0x1230)
+
+#define KERNEL_VERSION_MAJOR    REG8(0x1FF80003)
+#define KERNEL_VERSION_MINOR    REG8(0x1FF80002)
+#define KERNPA2VA(a)            ((a) + (KERNEL_VERSION_MINOR < 44 ? 0xD0000000 : 0xC0000000))
+#define IS_N3DS                 (*(vu32 *)0x1FF80030 >= 6) // APPMEMTYPE. Hacky but doesn't use APT. Handles O3DS fw running on N3DS
+
 typedef struct TakeoverParameters {
     u64 firmTid;
     u8 kernelVersionMajor;
@@ -59,8 +78,11 @@ typedef struct TakeoverParameters {
     char payloadFileName[255+1];
 } TakeoverParameters;
 
-#define REG8(a)     (*(vu8 *)(a))
-#define REG16(a)    (*(vu16 *)(a))
-#define REG32(a)    (*(vu32 *)(a))
+extern TakeoverParameters g_takeoverParameters;
 
-#define MAP_ADDR    0x40000000
+static inline void lcdDebug(bool topScreen, u32 r, u32 g, u32 b)
+{
+    u32 base = topScreen ? LCD_REGS_BASE + 0x200 : LCD_REGS_BASE + 0xA00;
+    *(vu32 *)(base + 4) = BIT(24) | b << 16 | g << 8 | r;
+}
+

@@ -3,31 +3,21 @@
 
 .section    .data.hooks, "aw", %progbits
 
-.align      3
-.type       kernelFirmlaunchHook1, %function
-.global     kernelFirmlaunchHook1
-kernelFirmlaunchHook1:
-    add     lr, lr, #4
-    push    {r0-r12, lr}
-    bl      kernDoPrepareForFirmlaunchHook
-    pop     {r0-r12, pc}
-.pool
+.type       kernelFirmlaunchHook, %function
+.global     kernelFirmlaunchHook
 
-.type       kernelFirmlaunchHook2, %function
-.global     kernelFirmlaunchHook2
-
-kernelFirmlaunchHook2:
+kernelFirmlaunchHook:
     // Copy hook to 0x1FFFFC00 which is the normal location, to avoid getting overwritten
     ldr     r4, =0x1FFFFC00
     mov     r0, r4
-    adr     r1, _kernelFirmlaunchHook2Start
-    adr     r2, kernelFirmlaunchHook2End
+    adr     r1, _kernelFirmlaunchHookStart
+    adr     r2, kernelFirmlaunchHookEnd
     sub     r2, r1
     bl      _memcpy32
     bx      r4
 .pool
 
-_kernelFirmlaunchHook2Start:
+_kernelFirmlaunchHookStart:
     ldr     r2, =0x1FFFFFFC
     mov     r1, #0
     str     r1, [r2]
@@ -54,8 +44,8 @@ _memcpy32:
         blo     _memcpy32_loop
     bx      lr
 .pool
-kernelFirmlaunchHook2End:
+kernelFirmlaunchHookEnd:
 
-.global     kernelFirmlaunchHook2Size
-kernelFirmlaunchHook2Size:
-    .word kernelFirmlaunchHook2End - kernelFirmlaunchHook2
+.global     kernelFirmlaunchHookSize
+kernelFirmlaunchHookSize:
+    .word kernelFirmlaunchHookEnd - kernelFirmlaunchHook

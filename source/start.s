@@ -1,14 +1,6 @@
-.arm
-.cpu        mpcore
+#include "asm_macros.s.h"
 
-.section    .text.start, "ax", %progbits
-.align      3
-.global     _start
-.type       _start, %function
-.func       _start
-.cfi_sections   .debug_frame
-.cfi_startproc
-_start:
+FUNCTION _start, .crt0
     push    {r4, pc}
 
     bl      takeoverMain
@@ -19,26 +11,32 @@ _start:
     mcr     p15, 0, r0, c7, c10, 4
     mcr     p15, 0, r0, c7, c5, 4
 
+    // Firmlaunch (kernPatchInterruptHandlerAndSvcPerms granted us access to this svc)
+    mov     r0, #0
+    ldr     r2, =g_takeoverParameters
+    ldrd    r2, [r2]
+    svc     0x7C
+
+    b       .
+END_FUNCTION
+
+FUNCTION escalateAndPatch
+    push {r0}
+
     // Check if Luma kext is there using GetSystemInfo. Always return 0 on vanilla
     ldr     r1, =0x20000
     mov     r2, #0
     svc     0x2A
-    movs    r8, r0
 
-    // Invalidate entire instruction cache using UnmapProcessMemory (also clean-invalidates dcache & other barriers...)
-    mov     r0, #0
-    mov     r1, #0
-    mov     r2, #0
-    svceq   0x30
-    svcne   0x72
+    // If it's Luma (r0 = 1), use custom svc BetterBackdoor; otherwise use our injected SVC
+    // Note: svc handler restores cpsr
+    cmp     r0, #1
+    ldreq   r0, =kernPatchInterruptHandlerAndSvcPerms
+    popeq   {r1}
+    svceq   0x80
 
-    // Firmlaunch
-    mov     r0, #0
-    ldr     r2, =g_takeoverParameters
-    ldrd    r2, [r2]
-    svceq   0x31
-    svcne   0x7C
+    popne   {r0}
+    svcne   0x30
 
-    b       .
-.cfi_endproc
-.endfunc
+    bx      lr
+END_FUNCTION
