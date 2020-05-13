@@ -30,11 +30,11 @@ _start2:
     adr     r6, _start
 
     // Clean and invalidate the data cache, invalidate the instruction cache, drain the write buffer
-    mov     r4, #0
+    mov     r0, #0
     ldr     r12, =0xFFFF0830
     blx     r12
-    mcr     p15, 0, r4, c7, c5, 0
-    mcr     p15, 0, r4, c7, c10, 4
+    mcr     p15, 0, r0, c7, c5, 0
+    mcr     p15, 0, r0, c7, c10, 4
 
     // Disable caches / MPU
     mrc     p15, 0, r0, c1, c0, 0   // read control register
