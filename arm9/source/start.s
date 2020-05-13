@@ -5,6 +5,67 @@
 .global     _start
 .type       _start, %function
 _start:
+    b       _start1
+    b       _start2
+    nop
+    nop
+
+_p9TakeoverParams:
+    .word   0xCCCCCCCC
+    .word   4
+    .word   __size__
+
+_start2:
+    // Elevate privileges if needed
+    mrs     r0, cpsr
+    tst     r0, #0xF
+    moveq   r0, pc
+    svceq   0x7B
+    nop
+
+    // Disable interrupts ASAP, clear flags, change sp
+    msr     cpsr_cxsf, 0xD3
+    ldr     sp, =0x08100000
+    adr     r4, _p9TakeoverParams
+    adr     r6, _start
+
+    // Clean and invalidate the data cache, invalidate the instruction cache, drain the write buffer
+    mov     r4, #0
+    ldr     r12, =0xFFFF0830
+    blx     r12
+    mcr     p15, 0, r4, c7, c5, 0
+    mcr     p15, 0, r4, c7, c10, 4
+
+    // Disable caches / MPU
+    mrc     p15, 0, r0, c1, c0, 0   // read control register
+    bic     r0, #(1<<12)            // - instruction cache disable
+    bic     r0, #(1<<2)             // - data cache disable
+    bic     r0, #(1<<0)             // - mpu disable
+    mcr     p15, 0, r0, c1, c0, 0   // write control register
+    add     r12, pc, #1
+    bx      r12
+
+.thumb
+_start2_thumb:
+    // Relocate (we hope that memcpy acts in a position-independent way)
+    ldr     r5, =0x08028000
+    mov     r0, r5
+    mov     r1, r6
+    ldr     r2, [r4, #8]
+    bl      memcpy
+
+    ldr     r0, [r4]
+    ldr     r1, [r4, #4]
+    add     r5, r5, #(_start2_jmp_main - _start + 1)
+    bx      r5
+
+_start2_jmp_main:
+    b       p9TakeoverMain
+    b       .
+.pool
+.arm
+
+_start1:
     // Elevate privileges if needed
     mrs     r0, cpsr
     tst     r0, #0xF

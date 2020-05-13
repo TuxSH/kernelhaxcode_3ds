@@ -38,7 +38,7 @@ static inline const char *getFirmName(u64 tid)
     switch (tid & 0x0FFFFFFF) {
         case 2: return "NATIVE_FIRM";
         case 3: return "SAFE_FIRM";
-        default: return NULL;
+        default: return "Arm9 exploit";
     }
 }
 
@@ -138,22 +138,25 @@ void arm11main(void)
     prepareScreens();
     title("Post-firmlaunch Arm11 stub (%s)\n\n", getFirmName(firmTid));
 
-    initFirm();
-
-    switch (firmTid & 0x0FFFFFFF) {
-        case 2:
-            // If testing with Luma, patch Luma like this:
-            // if (bootType != FIRMLAUNCH) ret += patchFirmlaunches(process9Offset, process9Size, process9MemAddr);
-            print("Doing safehax v1.1...\n");
-            doSafeHax11(firmTidMask);
-            break;
-        case 3:
-            print("Doing firmlaunchhax...\n");
-            doFirmlaunchHax(firmTid);
-            break;
-        default:
-            error("FIRM TID not supported!\n");
-            break;
+    if (firmTid != 0xFFFFFFFF) {
+        initFirm();
+        switch (firmTid & 0x0FFFFFFF) {
+            case 2:
+                // If testing with Luma, patch Luma like this:
+                // if (bootType != FIRMLAUNCH) ret += patchFirmlaunches(process9Offset, process9Size, process9MemAddr);
+                print("Doing safehax v1.1...\n");
+                doSafeHax11(firmTidMask);
+                break;
+            case 3:
+                print("Doing firmlaunchhax...\n");
+                doFirmlaunchHax(firmTid);
+                break;
+            default:
+                error("FIRM TID not supported!\n");
+                break;
+        }
+    } else {
+        while (PXIReceiveWord() != 0x0000CAFE);
     }
 
     Result res = PXIReceiveWord();

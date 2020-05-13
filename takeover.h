@@ -102,3 +102,13 @@ static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadF
 
     return ((Result (*)(u64, const char *, size_t))(KHC3DS_MAP_ADDR + 0x80000))(firmTidMask | firmTidLow, payloadFileName, payloadFileOffset);
 }
+
+static inline Result khc3dsTakeoverWithArm9Pwned(const char *payloadFileName, size_t payloadFileOffset)
+{
+    u64 firmTid = 0xFFFFFFFF;
+    // DSB, Flush Prefetch Buffer (more or less "isb")
+    __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 4" :: "r" (0) : "memory");
+    __asm__ __volatile__ ("mcr p15, 0, %0, c7, c5, 4" :: "r" (0) : "memory");
+
+    return ((Result (*)(u64, const char *, size_t))(KHC3DS_MAP_ADDR + 0x80000))(firmTid, payloadFileName, payloadFileOffset);
+}
