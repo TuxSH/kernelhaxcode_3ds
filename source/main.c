@@ -75,6 +75,19 @@ static Result installFirmlaunchHook(void)
 Result takeoverMain(u64 firmTid, const char *payloadFileName, size_t payloadFileOffset)
 {
     Result res = 0;
+#ifdef KHC3DS_FORCE_FIRM_TID
+    (void)firmTid;
+    firmTid = KHC3DS_FORCE_FIRM_TID;
+#endif
+#ifdef KHC3DS_FORCE_FILE_NAME
+    (void)payloadFileName;
+    payloadFileName = KHC3DS_FORCE_FILE_NAME;
+#endif
+#ifdef KHC3DS_FORCE_FILE_OFFSET
+    (void)payloadFileOffset;
+    payloadFileOffset = KHC3DS_FORCE_FILE_OFFSET;
+#endif
+
     g_takeoverParameters.firmTid = firmTid;
     g_takeoverParameters.kernelVersionMajor = KERNEL_VERSION_MAJOR;
     g_takeoverParameters.kernelVersionMinor = KERNEL_VERSION_MINOR;
