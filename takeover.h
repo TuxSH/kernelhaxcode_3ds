@@ -44,12 +44,15 @@ static inline void khc3dsPrepareL2Table(BlobLayout *layout)
     u32 *l2table = layout->l2table;
 
     u32 vaddr = (u32)layout->code;
-    u32 paddr;
+    u32 paddr = vaddr;
+
+#ifndef KHC3DS_NO_ADDR_TRANSLATION
     switch (vaddr) {
         case 0x14000000 ... 0x1C000000 - 1: paddr = vaddr + 0x0C000000; break; // LINEAR heap
         case 0x30000000 ... 0x40000000 - 1: paddr = vaddr - 0x10000000; break; // v8.x+ LINEAR heap
         default: paddr = 0; break; // should never be reached
     }
+#endif
 
     // Map AXIWRAM RWX RWX Shared, Outer Noncacheable, Inner Cached Write-Back Write-Allocate
     // DCache is PIPT

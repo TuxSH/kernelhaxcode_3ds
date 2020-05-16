@@ -2,6 +2,9 @@
 #include "types.h"
 #include "PXI.h"
 
+#define KHC3DS_NO_ADDR_TRANSLATION
+#include "../../takeover.h"
+
 #define CFG11_SHAREDWRAM_32K_DATA(i)    (*(vu8 *)(0x10140000 + i))
 #define CFG11_SHAREDWRAM_32K_CODE(i)    (*(vu8 *)(0x10140008 + i))
 #define CFG11_DSP_CNT                   (*(vu8 *)0x10141230)
@@ -48,8 +51,11 @@ static void doFirmlaunch(void)
 
 // Must be position-indepedendent:
 
-void p9TakeoverMain(u32 l2TablePa, u32 numCores)
+void p9TakeoverMain(BlobLayout *layout, u32 numCores)
 {
+    khc3dsPrepareL2Table(layout);
+    u32 l2TablePa = (u32)layout->l2table;
+
     *(vu32 *)0x1FFF8000 = l2TablePa | 1;
     *(vu32 *)0x1FFFC000 = l2TablePa | 1;
 
