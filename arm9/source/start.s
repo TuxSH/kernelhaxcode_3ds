@@ -13,6 +13,8 @@ _start:
 _p9TakeoverParams:
     .word   0xCCCCCCCC
     .word   4
+    .word   0xDDDDDDDD
+    .word   0xEEEEEEEE
     .word   __size__
 
 _start2:
@@ -51,11 +53,14 @@ _start2_thumb:
     ldr     r5, =0x08028000
     mov     r0, r5
     mov     r1, r6
-    ldr     r2, [r4, #8]
+    ldr     r2, [r4, #16]
     bl      memcpy
 
     ldr     r0, [r4]
     ldr     r1, [r4, #4]
+    ldr     r2, [r4, #8]
+    ldr     r3, [r4, #12]
+
     add     r5, r5, #(_start2_jmp_main - _start + 1)
     bx      r5
 

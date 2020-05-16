@@ -51,7 +51,7 @@ static void doFirmlaunch(void)
 
 // Must be position-indepedendent:
 
-void p9TakeoverMain(BlobLayout *layout, u32 numCores)
+void p9TakeoverMain(BlobLayout *layout, u32 numCores, void (*callback)(void *p), void *p)
 {
     khc3dsPrepareL2Table(layout);
     u32 l2TablePa = (u32)layout->l2table;
@@ -64,5 +64,6 @@ void p9TakeoverMain(BlobLayout *layout, u32 numCores)
         *(vu32 *)0x1F3FC000 = l2TablePa | 1;
     }
 
+    callback(p);
     doFirmlaunch();
 }
