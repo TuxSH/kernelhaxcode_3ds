@@ -1,11 +1,23 @@
 #include "asm_macros.s.h"
 
 FUNCTION _start, .crt0
-    push    {r4, pc}
+    b       start
+    .word   __start__
+    .word   arm9_bin
+
+start:
+    push    {r4, lr}
+
+    // Zero-fill bss
+    ldr     r0, =__bss_start__
+    mov     r1, #0
+    ldr     r2, =__bss_end__
+    sub     r2, r2, r0
+    bl      memset
 
     bl      takeoverMain
     cmp     r0, #0
-    popne   {r4, lr}
+    popne   {r4, pc}
 
     // DSB, then Flush Prefetch Buffer (equivalent of ISB in later arch. versions). r0 = 0
     mcr     p15, 0, r0, c7, c10, 4

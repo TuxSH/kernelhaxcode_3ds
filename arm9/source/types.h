@@ -34,6 +34,8 @@ typedef volatile s16 vs16; ///< 16-bit volatile signed integer.
 typedef volatile s32 vs32; ///< 32-bit volatile signed integer.
 typedef volatile s64 vs64; ///< 64-bit volatile signed integer.
 
+typedef u32 Result;
+
 /// Creates a bitmask from a bit number.
 #define BIT(n) (1U<<(n))
 
