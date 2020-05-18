@@ -54,7 +54,9 @@ static inline void khc3dsPrepareL2Table(BlobLayout *layout)
     }
 #endif
 
-    // Map AXIWRAM RWX RWX Shared, Outer Noncacheable, Inner Cached Write-Back Write-Allocate
+    // Map AXIWRAM RWX RWX Shared
+    // Outer Write-Through cached, No Allocate on Write, Buffered
+    // Inner Cached Write-Back Write-Allocate, Buffered
     // DCache is PIPT
     for(u32 offset = 0; offset < 0x80000; offset += 0x1000) {
         l2table[offset >> 12] = (0x1FF80000 + offset) | 0x5B6;
