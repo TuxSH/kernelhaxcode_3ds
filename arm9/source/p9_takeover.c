@@ -36,6 +36,7 @@ static void doFirmlaunch(void)
 
     while(PXIReceiveWord() != 0x44836);
     PXISendWord(0x964536);
+
     while(PXIReceiveWord() != 0x44837);
     PXIReceiveWord(); // High FIRM titleId
     PXIReceiveWord(); // Low FIRM titleId
@@ -44,9 +45,20 @@ static void doFirmlaunch(void)
     while(PXIReceiveWord() != 0x44846);
 
     *(vu32 *)0x1FFFFFFC = 0x22000000;
-
+    
     ((void (*)(void))0x22100000)();
     __builtin_unreachable();
+}
+
+static void p9McShutdown(void)
+{
+  // Fake p9 shutdown
+
+  while(PXIReceiveWord() != 0x10000);
+
+  PXISendWord(0);
+  PXISendWord(0x10040);
+  PXISendWord(0);
 }
 
 // Must be position-indepedendent:
@@ -56,14 +68,15 @@ void p9TakeoverMain(BlobLayout *layout, u32 numCores, void (*callback)(void *p),
     khc3dsPrepareL2Table(layout);
     u32 l2TablePa = (u32)layout->l2table;
 
-    *(vu32 *)0x1FFF8000 = l2TablePa | 1;
-    *(vu32 *)0x1FFFC000 = l2TablePa | 1;
+    ((vu32 *)0x1FFF8000)[KHC3DS_MAP_ADDR>>20] = l2TablePa | 1;
+    ((vu32 *)0x1FFFC000)[KHC3DS_MAP_ADDR>>20] = l2TablePa | 1;
 
     if (numCores == 4) {
-        *(vu32 *)0x1F3F8000 = l2TablePa | 1;
-        *(vu32 *)0x1F3FC000 = l2TablePa | 1;
+        ((vu32 *)0x1F3F8000)[KHC3DS_MAP_ADDR>>20] = l2TablePa | 1;
+        ((vu32 *)0x1F3FC000)[KHC3DS_MAP_ADDR>>20] = l2TablePa | 1;
     }
 
     callback(p);
+    p9McShutdown();
     doFirmlaunch();
 }
