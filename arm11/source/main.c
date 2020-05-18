@@ -159,11 +159,11 @@ void arm11main(void)
         while (PXIReceiveWord() != 0x0000CAFE);
     }
 
+    const char *fileName = g_takeoverParameters.payloadFileName;
     Result res = PXIReceiveWord();
     if ((res & 0x80000000) == 0) {
-        success("SafeB9SInstaller.bin read successfully!\n");
+        success("%s read successfully!\n", fileName);
     } else {
-        const char *fileName = g_takeoverParameters.payloadFileName;
         switch ((res >> 8) & 0xFF) {
             case 0:
                 error("Failed to mount the SD card! (%u)\n", res & 0xFF);
