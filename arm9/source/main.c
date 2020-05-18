@@ -13,13 +13,17 @@ void arm9main(void)
     memcpy(&g_takeoverParameters, (const void *)0x22200000, sizeof(g_takeoverParameters));
     size_t fileOffset = g_takeoverParameters.payloadFileOffset;
 
-    switch (g_takeoverParameters.firmTid & 0xFFFF) {
-        case 0x0003:
-        case 0x0002:
-            PXISendWord(0x0000CAFE);
-            break;
-        default:
-            break;
+    if(g_takeoverParameters.firmTid != 0xFFFFFFFF) {
+      switch (g_takeoverParameters.firmTid & 0xFFFF) {
+          case 0x0003:
+          case 0x0002:
+              PXISendWord(0x0000CAFE);
+              break;
+          default:
+              break;
+      }
+    } else {
+      PXISendWord(0x0000CAFE);
     }
 
     while (!PXIIsSendFIFOEmpty());

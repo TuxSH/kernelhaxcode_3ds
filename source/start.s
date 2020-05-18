@@ -6,7 +6,7 @@ FUNCTION _start, .crt0
     .word   arm9_bin
 
 start:
-    push    {r4, lr}
+    push    {r0-r4, lr}
 
     // Zero-fill bss
     ldr     r0, =__bss_start__
@@ -15,6 +15,7 @@ start:
     sub     r2, r2, r0
     bl      memset
 
+    pop     {r0-r3}
     bl      takeoverMain
     cmp     r0, #0
     popne   {r4, pc}
