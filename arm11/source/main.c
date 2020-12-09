@@ -20,6 +20,7 @@ void name(const char *fmt, ...)\
     while (hang) { \
         while (HID_PAD == 0); \
         I2C_writeReg(I2C_DEV_MCU, 0x20, 1); /* shutdown */ \
+        for (;;);\
     };\
 }
 
@@ -75,7 +76,6 @@ static void doFirmlaunchHax(u64 firmTid)
 static void initFirm(void)
 {
     vu32 *entrypointAddr = (vu32 *)0x1FFFFFFC;
-    vu32 *lumaOperation = (vu32 *)0x1FF80004;
 
     // Wait for Process9 to write the new entrypoint
     // (launchFirm doesn't do that because of firmlaunchhax)
@@ -85,22 +85,11 @@ static void initFirm(void)
     }
     while (entrypoint == 0);
 
-    bool isLuma = entrypoint == 0x1FF80000;
+    if (entrypoint == 0x1FF80000) {
+        // This may crash before the user can read the message, with Luma running in the background
+        error("Please recompile Luma3DS without firmlaunch\npatches.\n");
+    }
     *entrypointAddr = 0;
-
-    if (isLuma) {
-        // Handle Luma doing Luma things & wait for patching to finish -- note: can break in the future
-        *lumaOperation = 7; // "ARM11_READY"
-        while (*lumaOperation == 7);
-        *lumaOperation = 7;
-
-        while (*entrypointAddr == 0);
-        entrypoint = *entrypointAddr;
-    }
-
-    if (isLuma) {
-        print("Luma detected and bypassed.\n");
-    }
 
     print("Arm11 entrypoint is 0x%08lx.\n", entrypoint);
 
@@ -142,8 +131,6 @@ void arm11main(void)
         initFirm();
         switch (firmTid & 0x0FFFFFFF) {
             case 2:
-                // If testing with Luma, patch Luma like this:
-                // if (bootType != FIRMLAUNCH) ret += patchFirmlaunches(process9Offset, process9Size, process9MemAddr);
                 print("Doing safehax v1.1...\n");
                 doSafeHax11(firmTidMask);
                 break;
