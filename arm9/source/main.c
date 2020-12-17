@@ -14,16 +14,22 @@ void arm9main(void)
     size_t fileOffset = g_takeoverParameters.payloadFileOffset;
 
     if(g_takeoverParameters.firmTid != 0xFFFFFFFF) {
-      switch (g_takeoverParameters.firmTid & 0xFFFF) {
-          case 0x0003:
-          case 0x0002:
-              PXISendWord(0x0000CAFE);
-              break;
-          default:
-              break;
+        switch (g_takeoverParameters.firmTid & 0xFFFF) {
+            case 0x0003:
+            case 0x0002:
+                PXISendWord(0x0000CAFE);
+                break;
+            case 0x0202:
+                // Reply to the PrepareArm9ForTwl command with a custom reply code -- tell Arm11 stub we're alive
+                PXISendWord(0);
+                PXISendWord(0x20040);
+                PXISendWord(0x0000CAFE);
+                break;
+            default:
+                break;
       }
     } else {
-      PXISendWord(0x0000CAFE);
+        PXISendWord(0x0000CAFE);
     }
 
     while (!PXIIsSendFIFOEmpty());

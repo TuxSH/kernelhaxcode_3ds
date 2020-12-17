@@ -9,6 +9,10 @@
 #define HID_PAD                 (*(vu32 *)0x10146000 ^ 0xFFF)
 #define FIRM_MAGIC              0x4D524946 // 'FIRM' in little-endian
 
+#define DS_INTERNET_TID         0x0004800542383841ULL
+#define DS_INTERNET_TID_TWL     0x0003000542383841ULL
+#define DS_INTERNET_CONTENT_ID  2
+
 static u32 posY = 10;
 #define PRINT_FUNC(name, color, hang)\
 void name(const char *fmt, ...)\
@@ -73,6 +77,31 @@ static void doFirmlaunchHax(u64 firmTid)
     success("Got Arm9 arbitrary code execution!\n");
 }
 
+static void doLgyFirmHax(bool isN3ds)
+{
+    prepareFakeLauncher(isN3ds, DS_INTERNET_TID_TWL, DS_INTERNET_CONTENT_ID);
+
+    // Apparently the following 2 commands are necessary to make it work on all consoles (matches TwlBg behavior).
+    // In particular p9LgyLog seems to be needed... even though it tampers lgy.log.
+    Result res = p9LgyLog("Hello world from agbhax!\n");
+    if (res & 0x80000000) {
+        error("Log returned error %08lx!\n", res);
+    }
+
+    u8 bannerHmac[0x14] = {0};
+    res = p9LgySetParameters(3, false, DS_INTERNET_TID, bannerHmac);
+    if (res & 0x80000000) {
+        error("SetParameters returned error %08lx!\n", res);
+    }
+
+    res = p9LgyPrepareArm9ForTwl(DS_INTERNET_TID);
+    if (res & 0x80000000) {
+        error("PrepareArm9ForTwl returned error %08lx!\n", res);
+    } else if (res == 0x0000CAFE) {
+        success("Got Arm9 arbitrary code execution!\n");
+    }
+}
+
 static void initFirm(void)
 {
     vu32 *entrypointAddr = (vu32 *)0x1FFFFFFC;
@@ -122,6 +151,7 @@ void arm11main(void)
 
     u64 firmTid = g_takeoverParameters.firmTid;
     u64 firmTidMask = firmTid & ~0x0FFFFFFFull;
+    bool isN3ds = g_takeoverParameters.isN3ds;
 
     // I2C_init(); <-- this fucks up
     prepareScreens();
@@ -137,6 +167,10 @@ void arm11main(void)
             case 3:
                 print("Doing firmlaunchhax...\n");
                 doFirmlaunchHax(firmTid);
+                break;
+            case 0x202:
+                print("Doing agbhax...\n");
+                doLgyFirmHax(isN3ds);
                 break;
             default:
                 error("FIRM TID not supported!\n");

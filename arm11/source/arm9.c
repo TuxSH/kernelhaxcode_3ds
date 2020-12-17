@@ -160,6 +160,48 @@ Result p9McShutdown(void)
     return p9SendSyncRequest(0, cmdbuf);
 }
 
+Result p9LgyPrepareArm9ForTwl(u64 tid)
+{
+    u32 cmdbuf[0x40];
+
+    cmdbuf[0] = 0x20080;
+    cmdbuf[1] = (u32)tid;
+    cmdbuf[2] = (u32)(tid >> 32);
+
+    return p9SendSyncRequest(0, cmdbuf);
+}
+
+Result p9LgyLog(const char *fmt, ...)
+{
+    u32 cmdbuf[0x40];
+
+    cmdbuf[0] = 0xC0800;
+
+    char buf[0x80];
+    va_list args;
+    va_start(args, fmt);
+    xvsprintf(buf, fmt, args);
+    va_end(args);
+
+    return p9SendSyncRequest(0, cmdbuf);
+}
+
+Result p9LgySetParameters(u8 tidFlag, bool autolaunchMaybe, u64 tid, u8 *bannerHmac)
+{
+    u32 cmdbuf[0x40];
+
+    cmdbuf[0] = 0xB0240;
+    cmdbuf[1] = tidFlag;
+    cmdbuf[2] = autolaunchMaybe ? 1 : 0;
+    cmdbuf[3] = (u32)tid;
+    cmdbuf[4] = (u32)(tid >> 32);
+    memcpy(cmdbuf + 5, bannerHmac, 0x14);
+
+    return p9SendSyncRequest(0, cmdbuf);
+}
+
+// ==================================================
+
 Result firmlaunch(u64 firmlaunchTid)
 {
     PXIReset();
@@ -185,4 +227,56 @@ Result firmlaunch(u64 firmlaunchTid)
     while (!PXIIsSendFIFOEmpty());
 
     return 0;
+}
+
+// ==================================================
+
+static struct {
+    DSiHeader hdr;
+    u16 overwritten[2];
+    u8 code[0x10000 - 4]; // @ section + 8; needs to be 8-byte-aligned
+} *const launcher = (void *)0x27C00000;
+
+static inline u32 convertToDsPa(u32 pa)
+{
+    return 0x02000000 + ((pa - 0x20000000) >> 2);
+}
+
+void prepareFakeLauncher(bool isN3ds, u64 twlTid, u32 contentId)
+{
+    // We only support the lastest versions of AGB_FIRM (no point in supporting more than that)
+    u32 pcStackAddress = isN3ds ? 0x0806E634 : 0x0806E1B4;
+    u32 gadgetAddress = (isN3ds ? 0x080307BE : 0x08030CB6) | 1;
+
+    DSiHeader *hdr = &launcher->hdr;
+    NDSHeader *dsHdr = &hdr->ndshdr;
+
+    u32 dsPa = convertToDsPa(pcStackAddress);
+
+    memset(hdr, 0, sizeof(DSiHeader));
+
+    dsHdr->unitCode = 2; // DSi to avoid whitelist checks.
+    dsHdr->arm9destination = (void *)dsPa;
+    dsHdr->arm9binarySize = -dsPa;
+    dsHdr->arm9romOffset = 0x1000;
+
+    dsHdr->arm7destination = (void *)0x02000000;
+    dsHdr->arm7binarySize = 0;
+    hdr->arm9idestination = (void *)0x02000000;
+    hdr->arm9ibinarySize = 0;
+    hdr->arm7idestination = (void *)0x02000000;
+    hdr->arm7ibinarySize = 0;
+
+    memcpy(&hdr->tid_low, "1ANH", 4);
+
+    launcher->overwritten[0] = gadgetAddress;       // pc low halfword: pop {r4, pc}
+    launcher->overwritten[1] = 4;                   // offset in section, needs to be 8-byte-aligned
+
+    // Copy our arm9 code into the fake launcher
+    memcpy(launcher->code, (const void *)0x22100000, 0x8000);
+
+    // Also prepare the TID entries read @ 0x27DF6C00
+    *(u32 *)0x27DF6C00 = 1;
+    *(u64 *)0x27DF6C50 = twlTid;
+    *(u32 *)0x27DF6EC0 = contentId;
 }
