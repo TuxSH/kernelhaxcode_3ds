@@ -1,14 +1,13 @@
 .arm
 
-.section    .text.start, "ax", %progbits
-.align      2
-.global     _start
-.type       _start, %function
-_start:
+#include "asm_macros.s.h"
+
+FUNCTION _start, .crt0
     b       _start1
     b       _start2
     nop
     nop
+END_FUNCTION
 
 _p9TakeoverParams:
     .word   0xCCCCCCCC

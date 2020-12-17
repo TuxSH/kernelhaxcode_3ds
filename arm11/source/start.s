@@ -1,11 +1,9 @@
 .arm
 .cpu        mpcore
 
-.section    .text.start, "ax", %progbits
-.align      2
-.global     _start
-.type       _start, %function
-_start:
+#include "asm_macros.s.h"
+
+FUNCTION _start, .crt0
     // Disable interrupts and switch to supervisor mode
     cpsid   aif, #0x13
 
@@ -34,6 +32,7 @@ _start:
 
     ldr     sp, =__stack_top__
     b       arm11main
+END_FUNCTION
 
 .global prepareForFirmlaunchStub
 .type   prepareForFirmlaunchStub, %function
@@ -47,6 +46,7 @@ prepareForFirmlaunchStub:
         beq     _waitForCore0EntrypointLoop
 
     bx      r1                  // jump to core0's entrypoint
+.hidden prepareForFirmlaunchStubEnd
 prepareForFirmlaunchStubEnd:
 
 .global prepareForFirmlaunchStubSize
