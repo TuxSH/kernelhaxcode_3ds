@@ -95,10 +95,10 @@ static inline Result khc3dsTakeover(const char *payloadFileName, size_t payloadF
         case 53:
             firmTidLow = 2;
             break;
+        // 11.14+: use agbhax
         default:
-            // No exploit
-            khc3dsLcdDebug(true, 0, 255, 255);
-            return 0xDEADFFFF;
+            firmTidLow = 0x202;
+            break;
     }
 
     // DSB, Flush Prefetch Buffer (more or less "isb")
