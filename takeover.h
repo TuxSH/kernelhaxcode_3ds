@@ -27,10 +27,9 @@
 #define KHC3DS_MAP_ADDR         0x40000000
 
 typedef struct BlobLayout {
-    u8 padding0[0x1000]; // to account for firmlaunch params in case we're placed at FCRAM+0
-    u8 code[0x20000];
     u32 l2table[0x100];
-    u32 padding[0x400 - 0x100];
+    u8 smallWorkBuffer[0x1000 - 0x400];
+    u8 code[0xF000];
 } BlobLayout;
 
 static inline void khc3dsLcdDebug(bool topScreen, u32 r, u32 g, u32 b)
