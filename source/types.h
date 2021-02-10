@@ -60,9 +60,10 @@ typedef u32 Result;
 // PXI regs at +0xA1000
 #define LCD_REGS_BASE           (MAP_ADDR + 0xA0000)
 #define CFG11_REGS_BASE         (MAP_ADDR + 0xA2000)
+#define PDN_REGS_BASE           (MAP_ADDR + 0xA3000)
 
-//#define CFG11_SOCINFO           REG16(CFG11_REGS_BASE + 0x0FFC)
-#define CFG11_DSP_CNT           REG8(CFG11_REGS_BASE + 0x1230)
+//#define CFG11_SOCINFO         REG16(CFG11_REGS_BASE + 0xFFC)
+#define PDN_DSP_CNT             REG8(PDN_REGS_BASE + 0x230)
 
 #define KERNEL_VERSION_MAJOR    REG8(0x1FF80003)
 #define KERNEL_VERSION_MINOR    REG8(0x1FF80002)

@@ -42,7 +42,7 @@ static void *kernKernelSetStageSgiHandlerHook(KBaseInterruptEvent *this, u32 irq
         PXIReset();
 
         // CFG11_DSP_CNT must be zero when doing a firmlaunch
-        CFG11_DSP_CNT = 0x00;
+        PDN_DSP_CNT = 0x00;
 
         // DSB
         __asm__ __volatile__ ("mcr p15, 0, %0, c7, c10, 4" :: "r" (0) : "memory");

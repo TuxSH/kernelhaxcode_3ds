@@ -7,14 +7,14 @@
 
 #define CFG11_SHAREDWRAM_32K_DATA(i)    (*(vu8 *)(0x10140000 + i))
 #define CFG11_SHAREDWRAM_32K_CODE(i)    (*(vu8 *)(0x10140008 + i))
-#define CFG11_DSP_CNT                   (*(vu8 *)0x10141230)
+#define PDN_DSP_CNT                     (*(vu8 *)0x10141230)
 
 static void resetDsp(void)
 {
-    CFG11_DSP_CNT = 2; // PDN_DSP_CNT
+    PDN_DSP_CNT = 2;
     for(vu32 i = 0; i < 10; i++);
 
-    CFG11_DSP_CNT = 3;
+    PDN_DSP_CNT = 3;
     for(vu32 i = 0; i < 10; i++);
 
     for(u32 i = 0; i < 8; i++)

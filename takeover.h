@@ -74,8 +74,10 @@ static inline void khc3dsPrepareL2Table(BlobLayout *layout)
     // PXI registers (for cleaner hooks)
     l2table[0xA1000 >> 12] = 0x10163000 | 0x437;
 
-    // CFG11 registers, two pages
+    // CFG11 registers
     l2table[0xA2000 >> 12] = 0x10140000 | 0x437;
+
+    // PDN registers
     l2table[0xA3000 >> 12] = 0x10141000 | 0x437;
 }
 
