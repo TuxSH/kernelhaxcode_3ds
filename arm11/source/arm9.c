@@ -186,12 +186,12 @@ Result p9LgyLog(const char *fmt, ...)
     return p9SendSyncRequest(0, cmdbuf);
 }
 
-Result p9LgySetParameters(u8 tidFlag, bool autolaunchMaybe, u64 tid, u8 *bannerHmac)
+Result p9LgySetParameters(u8 twlCardMode, bool autolaunchMaybe, u64 tid, u8 *bannerHmac)
 {
     u32 cmdbuf[0x40];
 
     cmdbuf[0] = 0xB0240;
-    cmdbuf[1] = tidFlag;
+    cmdbuf[1] = twlCardMode;
     cmdbuf[2] = autolaunchMaybe ? 1 : 0;
     cmdbuf[3] = (u32)tid;
     cmdbuf[4] = (u32)(tid >> 32);

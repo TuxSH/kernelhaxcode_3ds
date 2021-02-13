@@ -83,7 +83,8 @@ static void doLgyFirmHax(bool isN3ds)
 
     // Apparently the following 2 commands are necessary to make it work on all consoles (matches TwlBg behavior).
     // In particular p9LgyLog seems to be needed... even though it tampers lgy.log.
-    Result res = p9LgyLog("Hello world from agbhax!\n");
+    // Hmm looks like not anymore...?
+    Result res = 0; //p9LgyLog("Hello world from agbhax!\n");
     if (res & 0x80000000) {
         error("Log returned error %08lx!\n", res);
     }
