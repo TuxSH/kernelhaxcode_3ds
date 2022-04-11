@@ -25,7 +25,8 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv6k -mtune=mpcore -marm
+FALSEPOSITIVES := -Wno-array-bounds -Wno-stringop-overflow -Wno-stringop-overread
+ARCH	:=	-march=armv6k -mtune=mpcore -marm $(FALSEPOSITIVES)
 
 CFLAGS	:= \
 		-g \

@@ -25,7 +25,7 @@ static Result modifySvcTableAndInjectInterruptHandler(void)
     for (svcTableMirrorVa = axiwramStart; svcTableMirrorVa < axiwramEnd && *svcTableMirrorVa != 0xE94D6F00; svcTableMirrorVa++);
 
     if (svcTableMirrorVa >= axiwramEnd) {
-        lcdDebug(true, 255, 0, 0);
+        lcdDebug(true, 255, 0, 0); // red
         return 0xDEAD2101;
     }
 
@@ -40,7 +40,7 @@ static Result modifySvcTableAndInjectInterruptHandler(void)
     u32 *pos;
     for (pos = axiwramStart; pos < axiwramEnd && *pos != 0xD8A007FC; pos++);
     if (pos >= axiwramEnd) {
-        lcdDebug(true, 255, 0, 0);
+        lcdDebug(true, 255, 69, 0); // orange
         return 0xDEAD2102;
     }
 
@@ -56,13 +56,13 @@ static Result installFirmlaunchHook(void)
     u32 *hookLoc;
     for (hookLoc = axiwramStart; hookLoc < axiwramEnd && *hookLoc != 0xE12FFF14; hookLoc++);
     if (hookLoc >= axiwramEnd) {
-        lcdDebug(true, 255, 0, 0);
+        lcdDebug(true, 255, 0, 255); // already magenta but eh
         return 0xDEAD2002;
     }
 
     u8 *branchDst = (u8 *)fixAddr(0x1FFF4F00); // should be OK, let's check
     if (*(u32 *)fixAddr(0x1FFF4F00) != 0xFFFFFFFF) {
-        lcdDebug(true, 255, 0, 0);
+        lcdDebug(true, 255, 192, 203); // pink
         return 0xDEAD2003;
     }
 

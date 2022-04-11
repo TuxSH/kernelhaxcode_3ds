@@ -25,7 +25,8 @@ INCLUDES	:=
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork
+FALSEPOSITIVES := -Wno-array-bounds -Wno-stringop-overflow -Wno-stringop-overread
+ARCH	:=	-march=armv5te -mtune=arm946e-s -mthumb -mthumb-interwork $(FALSEPOSITIVES)
 
 CFLAGS	:= \
 		-g \
