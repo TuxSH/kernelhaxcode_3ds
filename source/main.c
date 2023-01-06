@@ -35,7 +35,7 @@ static Result modifySvcTableAndInjectInterruptHandler(void)
     // Everything has access to SendSyncRequest1/2/3/4 (id 0x2E to 0x31)
     svcTableMirrorVa[0x30] = (u32)kernPatchInterruptHandlerAndSvcPerms;
 
-    // Locate interrupt manager; it's first fields correspond to the array of SGI handlers per core
+    // Locate interrupt manager; it's first field corresponds to the array of SGI handlers per core
     // Then we replace the KernelSetState SGI (6) handler
     u32 *pos;
     for (pos = axiwramStart; pos < axiwramEnd && *pos != 0xD8A007FC; pos++);

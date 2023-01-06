@@ -139,7 +139,7 @@ $(OUTPUT).bin	:	$(OUTPUT).elf
 	$(OBJCOPY) -S -O binary $< $@
 	@echo built ... $(notdir $@)
 
-$(OFILES_SOURCES) : $(HFILES)
+$(OFILES_SOURCES) : | $(HFILES)
 
 $(OUTPUT).elf	:	$(OFILES)
 
